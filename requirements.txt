@@ -1,0 +1,18 @@
+# neural stuff
+torch==2.2.*
+setuptools
+wandb==0.15.*
+
+# survival
+scikit-survival==0.22.*
+
+# always useful in any data science project
+scikit-learn
+pandas
+numpy
+scipy
+matplotlib
+
+# fdapy==1.0.1
+# FDApy @ git+https://github.com/StevenGolovkine/FDApy
+FDApy @ git+https://github.com/Wieske/FDApy@mfpca-pace-update
