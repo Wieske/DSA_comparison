@@ -74,8 +74,6 @@ def train_test_run(args, param, data, n='', lm=''):
             metrics.to_csv(f"{param['project_dir']}/metrics/{name}.csv")
             m_avg = metrics.xs("avg", level=1, axis=1).mean()
             results[survival_model] = m_avg.to_dict()
-            save_model(model={"name": name, "param": param, "long_model": long_model, "surv_model": surv_model},
-                       project_dir=param["project_dir"], filename=name)
         print(f"{name} finished")
     return results, train_times
 
@@ -91,7 +89,7 @@ if __name__ == '__main__':
     parser.add_argument("--test_size", type=int, default=None)
     parser.add_argument("--train_size", type=int, default=None)
     parser.add_argument("--cross_validation", type=bool, default=False)
-    parser.add_argument("--train_sets", type=int, default=3)
+    parser.add_argument("--train_sets", type=int, default=10)
     parser.add_argument("--long_model", choices=["baseline", "last_visit", "MFPCA", "RNN", "RNN_long"], default="last_visit")
     parser.add_argument("--surv_model", choices=["All", "CPH", "RSF", "FNN", "True_rate"], default="All")
     parser.add_argument("--missing_impute", choices=["False", "zero", "ffill"], default="ffill")

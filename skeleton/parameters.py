@@ -9,7 +9,7 @@ import pandas as pd
 def get_fixed_param(args, project_dir=None, seed=None, nr_long_var=10):
     """
     Get a fixed set of hyperparameters
-    :param args: arguments from experiment script to save to wandb parameters
+    :param args: arguments from experiment script
     :param project_dir
     :param seed: random seed
     :return: dict containing the hyperparameters

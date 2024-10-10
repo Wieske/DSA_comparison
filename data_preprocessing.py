@@ -54,7 +54,7 @@ def tadpole_tte(g, features):
 
 # Load tadpole dataset
 data = pd.read_csv("dataset/TADPOLE_D1_D2.csv")
-data_dict = pd.read_csv("dataset/TADPOLE_D1_D2_Dict.csv")
+# data_dict = pd.read_csv("dataset/TADPOLE_D1_D2_Dict.csv")
 
 # Define features
 feat_id = ["RID", "PTID", "VISCODE", "EXAMDATE", "DX_bl", "DXCHANGE", "DX", "M"]
@@ -70,14 +70,6 @@ data = data[data["DX_bl"] != "AD"]
 
 # Apply function to transform to time to event data
 data_sa = data.groupby("RID").apply(lambda x: tadpole_tte(x, feat + ["delta"])).unstack("features").reset_index()
-
-# Get missing mask and fill missing data with zero order hold imputation
-# missing_mask = data_sa.isna()
-# data_sa = data_sa.unstack("RID").fillna(method="ffill").stack("RID").sort_index(level="RID").reset_index()
-# Remove data after event/ censoring
-# data_sa = data_sa[data_sa.month <= data_sa.TTE]
-# Drop remaining missing data (missing at baseline)
-# data_sa.dropna(inplace=True)
 
 # Transform categorical features to dummies
 feat_categorical = ["PTETHCAT", "PTGENDER", "PTMARRY", "PTRACCAT"]
@@ -96,5 +88,5 @@ df["AGE_t"] = df["AGE"] + df["visit_time"] / 12
 
 # Save preprocessed datasets
 df.to_csv("dataset/df_adni_tadpole.csv", index=False)
-data_sa.to_csv("dataset/Tadpole_SA_long.csv")
-data_sa_surv.to_csv("dataset/Tadpole_SA_surv.csv")
+# data_sa.to_csv("dataset/Tadpole_SA_long.csv")
+# data_sa_surv.to_csv("dataset/Tadpole_SA_surv.csv")

@@ -261,6 +261,5 @@ def surv_long_to_wide(df, missing_impute="zero"):
         else:
             data[i, :seq_len, 1:] = group[var]
         data[i, :seq_len, 0] = np.append(np.diff(group["visit_time"]), 0)  # delta variable
-        # data[i, :seq_len, 0] = group["visit_time"]
         i += 1
     return data, id_info

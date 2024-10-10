@@ -29,11 +29,7 @@ def pytorch_train_loop(param, data, model, loss_fn, savepath, patience=10):
         for i in range(0, len(data_index), param["batch_size"]):
             idx = data_index[i:i+param["batch_size"]]
             x, ids = x_train[idx], ids_train.iloc[idx]
-            if param["train_landmarking"] == "last":
-                last_idx = torch.sum(~torch.isnan(x[:, :, 0]), dim=1) - 1
-                last_idx[last_idx == 0] = 1
-                x[torch.arange(x.shape[0], device=device), last_idx, :] = np.nan
-            elif param["train_landmarking"] == "random":
+            if param["train_landmarking"] == "random":
                 seq_length = torch.sum(~x[:, :, 0].isnan(), dim=1)
                 mask_idx = torch.tensor([rng.integers(0, int(high)) for high in seq_length], device=device) + 1
                 seq_index = torch.tensor(np.indices(x.shape)[1], device=device)
@@ -106,8 +102,4 @@ def predict_long_model(model, x):
         encoding = encoding.cpu().numpy()
     else:
         encoding = model.long_predict(x)
-    # add landmark time to encoding??
-    # last_idx = np.sum(~np.isnan(x[:, :, 0]), axis=1) - 1
-    # t_last = np.cumsum(x[:, :-1, 0], axis=1)[np.arange(x.shape[0]), last_idx - 1]
-    # encoding = np.concatenate([t_last[:, None], encoding], axis=-1)
     return surv_pred, encoding

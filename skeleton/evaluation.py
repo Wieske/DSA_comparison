@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import wandb
 from skeleton.utils import load_model, SurvivalFunction
 from skeleton.evaluation_utils import (IPCW, compute_auc, compute_likelihood, compute_survdiff, compute_c_index,
                                        compute_brier_score)
@@ -57,33 +56,3 @@ def evaluate_survival(long_model, surv_model, data, mode="val", weighted=True):
         if mse is not None:
             mse.at[lm, "avg"] = np.mean(mse.loc[lm, eval_time])
     return pd.concat({"auc": auc, "brier_score": bs, "c_index": c_index, "likelihood": likelihood, "mse": mse}, axis=1)
-
-
-def evaluate_models_on_test(data, args, param_sets, survival_models):
-    project_dir = param_sets.at[0, "project_dir"]
-    selection_metric = param_sets.at[0, "selection_metric"]
-    if data.true_surv is not None:
-        survival_models += ["True_rate"]
-    for survival_model in survival_models:
-        if survival_model == "True_rate":
-            param = param_sets.loc[0].to_dict()
-            param["survival_model"] = "True_rate"
-            best_model = {"name": "True_rate", "param": param, "long_model": None, "surv_model": "True_rate",
-                          selection_metric: 0}
-        else:
-            try:
-                best_model = load_model(project_dir, f"{args.long_model}_{survival_model}")
-            except FileNotFoundError:
-                print(f"No best model found for {args.long_model}_{survival_model}")
-                continue
-        param = best_model["param"]
-        param["best"] = True
-        wandb.init(name="best_" + str(best_model["name"]), project=args.project, config=param)
-        metrics = evaluate_survival(best_model["long_model"], best_model["surv_model"], data, mode="test")
-        metrics.to_csv(f"{project_dir}/metrics/{args.long_model}_{survival_model}_best.csv")
-        m_avg = metrics.xs("avg", level=1, axis=1).mean()
-        metrics.columns = ["_".join(map(str, c)) for c in metrics.columns.to_flat_index()]
-        wandb.log({"test/metrics": wandb.Table(dataframe=metrics)})
-        [wandb.log({"test/avg_" + m_avg.index[i]: m_avg.iloc[i]}) for i in range(len(m_avg))]
-        wandb.finish()
-

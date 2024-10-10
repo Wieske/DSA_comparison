@@ -5,11 +5,10 @@ import numpy as np
 import pandas as pd
 import torch
 from sksurv.linear_model import CoxPHSurvivalAnalysis
-from sksurv.ensemble import ExtraSurvivalTrees
+from sksurv.ensemble import RandomSurvivalForest
 from sksurv.util import Surv
 
 from skeleton.longitudinal_training import predict_long_model, pytorch_train_loop
-from skeleton.MaskedRSF import RandomSurvivalForest
 from skeleton.loss_functions import TotalLoss
 from skeleton.longitudinal_models import LongSurvModel
 from skeleton.utils import SurvivalFunction
@@ -49,13 +48,6 @@ def train_surv_model(surv_model, long_model, data, param):
                                   max_features="sqrt",
                                   n_jobs=-1,
                                   random_state=param["seed"])
-    elif surv_model == "ERSF":
-        sm = ExtraSurvivalTrees(n_estimators=param["rsf_n_estimators"],
-                                min_samples_split=2 * param["rsf_min_samples_leaf"],
-                                min_samples_leaf=param["rsf_min_samples_leaf"],
-                                max_features="sqrt",
-                                n_jobs=-1,
-                                random_state=param["seed"])
     else:
         raise NotImplementedError(f"Chosen survival model: {surv_model}, is not implemented")
 
@@ -69,12 +61,7 @@ def train_surv_model(surv_model, long_model, data, param):
 
     # Fit and return model
     try:
-        if param["train_landmarking"] == "random" and surv_model == "RSF":
-            print("training masked version of RSF")
-            sm.masked_fit(encoding, y_train, x, long_model)
-            return sm
-        else:
-            sm.fit(encoding, y_train)
+        sm.fit(encoding, y_train)
     except ValueError:
         sm = None
     return sm

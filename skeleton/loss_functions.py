@@ -26,26 +26,6 @@ def negative_log_likelihood(predictions, event, event_time_idx):
     return loss
 
 
-def ranking_loss(surv_pred, event, event_time_index, sigma):
-    """
-    Function to compute the ranking loss of the DeepHit paper, which is based on the principle of the C-index
-    :param surv_pred: survival predictions from the model (tensor of size N x len(time_range))
-    :param event: tensor that indicates for each individual if they experienced the event (1) or not (0)
-    :param event_time_index: idx of time_range at which event occurs
-    :param sigma: parameter that determines the influence of the ranking loss
-    :return:
-    """
-    loss = 0
-    cif = torch.cumsum(surv_pred, dim=-1)
-    max_event = max(event_time_index)
-    for ci, ti in zip(cif[event == 1], event_time_index[event == 1]):
-        # For all events: all patients that didn't experience event before
-        # must have a lower risk for that cause
-        if ti < max_event:
-            loss += torch.mean(torch.exp((cif[event_time_index > ti][:, ti] - ci[ti] / sigma)))
-    return loss / len(cif)
-
-
 def longitudinal_loss(long_pred, x):
     """
     Computes the mean squared error between the longitudinal prediction of the model and the data
@@ -77,11 +57,10 @@ class TotalLoss(nn.Module):
         self.time_range = torch.tensor(time_range, dtype=torch.float, device=self.device)
         self.surv_val = surv_val
         self.long_val = long_val
-        self.rank_val = rank_val
 
     def forward(self, long_pred, surv_pred, data, labels):
         """
-        Calculate total loss as negative_log_likelihood + alpha * ranking_loss + beta * longitudinal_loss
+        Calculate total loss as a * negative_log_likelihood + b * longitudinal_loss
         :param long_pred: longitudinal prediction(tensor of size [batch, seq_len, num_var]
         :param surv_pred: (P(T=t|x) for t in time_range), so estimation of probability of event at each time point
         :param data: (x) data tensor of size [batch, seq_len, num_var]
@@ -95,5 +74,4 @@ class TotalLoss(nn.Module):
         zero = torch.tensor(0., device=event.device)
         nll = zero if self.surv_val == 0 else negative_log_likelihood(surv_pred, event, event_time_idx)
         ll = zero if self.long_val == 0 else longitudinal_loss(long_pred, data)
-        rl = zero if self.rank_val == 0 else ranking_loss(surv_pred, event, event_time_idx, sigma=1.0)
-        return self.surv_val * nll + self.long_val * ll + self.rank_val * rl
+        return self.surv_val * nll + self.long_val * ll

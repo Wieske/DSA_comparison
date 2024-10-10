@@ -5,8 +5,6 @@ Script for data simulation
 import numpy as np
 import pandas as pd
 from numpy.random import default_rng
-from scipy.interpolate import BSpline
-from utils import random_cov
 
 
 class SimulatedDataset:
@@ -27,12 +25,7 @@ class SimulatedDataset:
 
         for i in range(nr_datasets):
             self.cens = self.rng.uniform(1, 22, size=self.N)
-            if scenario == 4:
-                self.nr_bcov = 0
-                self.nr_lcov = 10
-                self.bcov, self.lcov, self.hazard = self.hazard_bspline(c_long=[0.2, 1, 5, -0.2, -5])
-            else:
-                self.bcov, self.lcov, self.hazard = self.hazard_FSF()
+            self.bcov, self.lcov, self.hazard = self.hazard_FSF()
             self.df, self.true_surv = self.create_dataframe()
             self.df_list.append(self.df)
 
@@ -80,40 +73,6 @@ class SimulatedDataset:
         # add measurement error to longitudinal covariates
         error = self.rng.normal(0, 1, size=[self.N, self.nr_times, self.nr_lcov])
         lcov = cov_x + error
-        return bcov, lcov, hazard
-
-    def hazard_bspline(self, c_long=1):
-        # baseline covariates
-        bcov = np.zeros((self.N, 1, self.nr_bcov))
-
-        # longitudinal coviariates based on b-splines
-        lcov = np.zeros(shape=[self.N, self.nr_times, self.nr_lcov])
-        seq_len = self.visit_times[-1]
-        degree = 3
-        num_coef = degree + 2
-        knots = np.linspace(-seq_len, 2 * seq_len, num_coef + degree + 1)
-
-        # create a random positive_semidefinite covariance matrix
-        cov_val = 0.3
-        cov = random_cov(self.nr_lcov, self.rng, e_val=cov_val)
-
-        # generate random coefficients from multivariate normal distribution
-        for n in range(self.N):
-            c = self.rng.multivariate_normal(np.zeros(self.nr_lcov), cov, size=num_coef).T
-            for i in range(self.nr_lcov):
-                bspline = BSpline(knots, c[i], degree)
-                lcov[n, :, i] = bspline(self.visit_times)
-
-        # hazard
-        c_base = np.ones(self.nr_bcov)
-        c_long = np.ones(self.nr_lcov)
-        # c_long = np.repeat(c_long, int(self.nr_lcov/len(np.atleast_1d(c_long))+1))[:self.nr_lcov]
-        h0 = np.exp(-4)
-        hazard = h0 * np.exp(np.dot(bcov, c_base) + np.dot(lcov, c_long))
-
-        # add measurement error to longitudinal covariates
-        error = self.rng.normal(0, 1, size=[self.N, self.nr_times, self.nr_lcov])
-        lcov += error
         return bcov, lcov, hazard
 
     def generate_survival_model(self, hazard):
@@ -169,12 +128,12 @@ class SimulatedDataset:
 def save_simdatasets(trainseed=42, testseed=0):
     # training sets
     n = 11000
-    for s in [1, 2, 3, 4]:
+    for s in [1, 2, 3]:
         sim_data = SimulatedDataset(n, scenario=s, seed=trainseed)
         sim_data.df.to_csv(f"../dataset/train/simdata_s{s}.csv")
     # test sets
     n = 3000
-    for s in [1, 2, 3, 4]:
+    for s in [1, 2, 3]:
         sim_data = SimulatedDataset(n, scenario=s, seed=testseed)
         sim_data.df.to_csv(f"../dataset/test/simdata_s{s}.csv")
         sim_data.true_surv.to_csv(f"../dataset/truesurv/simdata_s{s}.csv")

@@ -1,38 +1,23 @@
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
-from skeleton.results_analysis import combine_files, landmark_subplots, plot_landmarking
-from skeleton.data_processing import SurvData
+from skeleton.results_analysis import combine_files, landmark_subplots
 
 
-def plot_event_dist(ids):
-    x = ids["event_time"].groupby(ids["event"]).value_counts().unstack(level=0).fillna(value=0)
-    fig, ax = plt.subplots()
-    ax.bar(x.index, x.loc[:, 0], width=2, label="Censored", bottom=np.zeros(len(x)))
-    ax.bar(x.index, x.loc[:, 1], width=2, label="Event", bottom=x.loc[:, 0])
-    ax.set_xlabel("Event time (months)")
-    ax.set_ylabel("Count")
-    fig.suptitle("ADNI event distribution")
-    fig.legend(loc="right")
-    return fig
-
-
-logs_dir = "M:/dynamic-survival-analysis/logs"
-fig_dir = "results/figures"
-figs = {}
-sup = True
-
+fig_dir = "figures"
+sup = False  # create supplementary figures
 plt.rcParams.update({'font.size': 12})
-# plt.style.use('seaborn-v0_8-colorblind')
 
-# Load and combine results
+# Combine results from experiments into one file
+# logs_dir = "logs/"
 # combine_files([f"{logs_dir}/Landmarking_s{n}_1000" for n in [1, 2, 3]], savename="landmarking_sim", task_lib=landmarking)
 # combine_files([f"{logs_dir}/Landmarking_ADNI"], savename="landmarking_ADNI", task_lib=landmarking)
 
-# Read results data
+# Load simulation results
 m_sim = pd.read_csv(f"results/Metrics_landmarking_sim.csv", header=[0, 1])
 m_sim = m_sim.rename(columns=lambda x: "" if "Unnamed" in x else x, level=1)
 m_s3 = m_sim[m_sim["dataset"] == "s3"]
+
+# Load adni results
 m_adni = pd.read_csv(f"results/Metrics_landmarking_ADNI.csv", header=[0, 1])
 m_adni = m_adni.rename(columns=lambda x: "" if "Unnamed" in x else x, level=1)
 # convert months to years in adni for consistency:
@@ -69,11 +54,6 @@ df = m_adni[m_adni["landmark"] == 3]
 f = landmark_subplots(df, "metric", [("last_visit", "RSF"), ("RNN_long", "RSF"), ("RNN_long", "FNN")],
                       plot_var="task", metric=["auc", "brier_score"], title="ADNI results at landmark time: 3 years")
 f.savefig(f"{fig_dir}/ADNI_lm3.jpg")
-
-# ADNI event distribution
-adni_ids = SurvData("dataset/df_adni_tadpole.csv").ids_all
-f = plot_event_dist(adni_ids)
-f.savefig(f"{fig_dir}/ADNI_events.jpg")
 
 # Supplementary results
 if sup:

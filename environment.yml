@@ -10,7 +10,6 @@ dependencies:
   - setuptools
   - pytorch=2.2.*
   - pytorch-cuda
-  - wandb=0.15.*
   - scikit-survival=0.22.*
   - scikit-learn
   - pandas
@@ -22,5 +21,3 @@ dependencies:
 #      - fdapy==1.0.1
 #      - FDApy @ git+https://github.com/StevenGolovkine/FDApy
       - FDApy @ git+https://github.com/Wieske/FDApy@mfpca-pace-update
-
-prefix: C:\Users\Wieske\miniconda3\envs\dynamic-survival-analysis
