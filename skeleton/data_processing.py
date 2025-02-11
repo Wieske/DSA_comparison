@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 import copy
 from sklearn.model_selection import train_test_split
-
 from skeleton.parameters import get_times_for_data
 from skeleton.evaluation_utils import IPCW
 
@@ -31,11 +30,13 @@ class SurvData:
                  sets=1, cross_validation=False, normalization=None, missing_impute="ffill", seed=42):
         self.filename = filepath.split('/')[-1]
         self.train_size = train_size
+        self.val_size = val_size
         self.train_landmarking = train_landmarking
         self.cross_validation = cross_validation
         self.missing_impute = missing_impute
         self.normalization = normalization
         self.time_range, self.landmarks, self.eval_time = get_times_for_data(filepath)
+        self.seed = seed
 
         self.X = {}  # type: dict
         self.ids = {}  # type: dict
@@ -56,6 +57,8 @@ class SurvData:
                 self.ids_all["set"] = set_idx
                 self.current_set = 0
                 self.ids["train"] = self.ids_all.loc[self.ids_all["set"] == 0]
+            else:
+                self.ids["train"] = self.ids_all
         elif cross_validation:
             n = len(self.ids_all)
             set_idx = np.concatenate((np.repeat(np.arange(sets), n // sets), np.arange(n % sets)))
@@ -147,7 +150,14 @@ class SurvData:
             self.ids["test"] = self.ids_all.loc[self.ids_all["set"] == self.current_set]
             self.X["test"] = self.X_all[self.ids["test"].index, :, :]
             self.ids["train"] = self.ids_all.loc[self.ids_all["set"] != self.current_set]
+
+            if self.val_size is not None:
+                # split training data in train, val:
+                self.ids["train"], self.ids["val"] = train_test_split(self.ids["train"], test_size=self.val_size,
+                                                                      random_state=self.seed)
+                self.X["val"] = self.X_all[self.ids["val"].index, :, :]
             self.X["train"] = self.X_all[self.ids["train"].index, :, :]
+
             if self.normalization is not None:
                 norm_fun = self.get_normalization_function(self.X["train"][:, :, 1:], method=self.normalization)
                 for s in self.X.keys():

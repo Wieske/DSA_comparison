@@ -48,13 +48,13 @@ class SimulatedDataset:
              "sigma": sigma}
 
         # baseline covariates
-        if self.scenario == 2:
+        if self.scenario == 2 or self.scenario == 4:
             bcov = np.zeros((self.N, 1, self.nr_bcov + 1))
         else:
             bcov = np.zeros((self.N, 1, self.nr_bcov))
         bcov[:, 0, 0] = self.rng.binomial(1, 0.5, size=self.N)
         bcov[:, 0, 1] = self.rng.normal(0, 1, size=self.N)
-        if self.scenario == 2:
+        if self.scenario == 2 or self.scenario == 4:
             # add interaction term bcov1 * bcov2 to baseline covariates that is not used in model specification
             bcov[:, 0, 2] = bcov[:, 0, 0] * bcov[:, 0, 1]
             c["gamma"] = np.array([-4, -2, 4])
@@ -64,14 +64,28 @@ class SimulatedDataset:
         # generate subject-specific random effects:
         b = self.rng.multivariate_normal(np.zeros(self.nr_lcov), c["sigma"], size=[self.N, 1])
         times = self.visit_times[None, :, None]
-        if self.scenario == 3:
-            cov_x = c["beta0"] + c["beta1"] * x + (c["betat"] + b) * times
-        else:
+        if self.scenario in [1, 2]:
             cov_x = c["beta0"] + c["beta1"] * x + b + c["betat"] * times
+        else:
+            cov_x = c["beta0"] + c["beta1"] * x + (c["betat"] + b) * times
+
         h0 = np.exp(-7)
-        hazard = h0 * np.exp(np.dot(bcov, c["gamma"]) + np.dot(cov_x, c["alpha"]))
+
+        if self.scenario == 4:
+            self.nr_lcov = 4
+            # create new variable r with randomly sampled values
+            r = self.rng.uniform(-11, 9, [self.N, self.nr_times])
+            # compute cumulative sum of r and delay this such that rsum[5]=0, rsum[6]=r[0], rsum[7]=r[0]+r[1] etc
+            rsum = np.concatenate([np.zeros([self.N, 6]), np.cumsum(r, axis=1)[:, :-6]], axis=1)
+            # add rsum to hazard
+            hazard = h0 * np.exp(np.dot(bcov, c["gamma"]) + np.dot(cov_x, c["alpha"]) + 0.2 * rsum)
+            # add r to the covariates
+            cov_x = np.concatenate([cov_x, r[:, :, None]], axis=-1)
+        else:
+            hazard = h0 * np.exp(np.dot(bcov, c["gamma"]) + np.dot(cov_x, c["alpha"]))
+
         # add measurement error to longitudinal covariates
-        error = self.rng.normal(0, 1, size=[self.N, self.nr_times, self.nr_lcov])
+        error = self.rng.normal(0, 1, size=[self.N, self.nr_times, cov_x.shape[2]])
         lcov = cov_x + error
         return bcov, lcov, hazard
 
@@ -125,15 +139,15 @@ class SimulatedDataset:
         return df, true_surv
 
 
-def save_simdatasets(trainseed=42, testseed=0):
+def save_simdatasets(scenarios, trainseed=42, testseed=0):
     # training sets
     n = 11000
-    for s in [1, 2, 3]:
+    for s in scenarios:
         sim_data = SimulatedDataset(n, scenario=s, seed=trainseed)
         sim_data.df.to_csv(f"../dataset/train/simdata_s{s}.csv")
     # test sets
     n = 3000
-    for s in [1, 2, 3]:
+    for s in scenarios:
         sim_data = SimulatedDataset(n, scenario=s, seed=testseed)
         sim_data.df.to_csv(f"../dataset/test/simdata_s{s}.csv")
         sim_data.true_surv.to_csv(f"../dataset/truesurv/simdata_s{s}.csv")

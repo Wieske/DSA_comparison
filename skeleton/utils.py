@@ -133,3 +133,14 @@ def get_metrics_mean(ld):
         return {m: np.mean([d[m] for d in ld]) for m in ld[0]}
     else:
         return np.nan
+
+
+def loguniform(rng, lower, upper, size=1):
+    """
+    Function to create an array of numbers randomly sampled from a log-uniform distribution
+    :param lower: (float) Lower boundary for sampling interval
+    :param upper: (float) Upper boundary for sampling interval
+    :param size: (int or tuple of ints) Output shape
+    :return: out: (ndarray) samples from log-uniform distribution
+    """
+    return np.exp(rng.uniform(np.log(lower), np.log(upper), size))

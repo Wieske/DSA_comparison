@@ -14,5 +14,4 @@ matplotlib
 
 # for MFPCA model
 # fdapy==1.0.1
-# FDApy @ git+https://github.com/StevenGolovkine/FDApy
 FDApy @ git+https://github.com/Wieske/FDApy@mfpca-pace-update

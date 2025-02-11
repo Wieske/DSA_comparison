@@ -5,7 +5,6 @@ Run models with fixed set of parameters
 import numpy as np
 import pandas as pd
 from argparse import ArgumentParser
-import os
 import time
 
 from skeleton.parameters import get_survival_models, start_new_project
@@ -24,8 +23,9 @@ def main(args, seed):
     :return: results (dict)
     """
     project_dir = f"./logs/{args.project}/task_{args.task}"
-    data = SurvData(args.filepath, test_file=args.test_file, train_size=args.train_size, test_size=args.test_size,
-                    train_landmarking=args.train_landmarking, sets=args.train_sets, cross_validation=args.cross_validation,
+    data = SurvData(args.filepath, test_file=args.test_file, cross_validation=args.cross_validation,
+                    train_size=args.train_size, test_size=args.test_size, val_size=args.val_size,
+                    train_landmarking=args.train_landmarking, sets=args.train_sets,
                     normalization=args.normalization, missing_impute=args.missing_impute, seed=seed)
     print(f"Data loaded, saving project logs in: {project_dir}")
     param = start_new_project(args, project_dir, seed=seed, nr_long_var=sum(1 for v in data.var if v[:2]=="L_"))
@@ -74,6 +74,8 @@ def train_test_run(args, param, data, n='', lm=''):
             metrics.to_csv(f"{param['project_dir']}/metrics/{name}.csv")
             m_avg = metrics.xs("avg", level=1, axis=1).mean()
             results[survival_model] = m_avg.to_dict()
+            save_model(model={"name": name, "param": param, "long_model": long_model, "surv_model": surv_model},
+                       project_dir=param["project_dir"], filename=name)
         print(f"{name} finished")
     return results, train_times
 
@@ -88,6 +90,7 @@ if __name__ == '__main__':
     parser.add_argument("--test_file", type=str, default=None)
     parser.add_argument("--test_size", type=int, default=None)
     parser.add_argument("--train_size", type=int, default=None)
+    parser.add_argument("--val_size", type=float, default=None)
     parser.add_argument("--cross_validation", type=bool, default=False)
     parser.add_argument("--train_sets", type=int, default=10)
     parser.add_argument("--long_model", choices=["baseline", "last_visit", "MFPCA", "RNN", "RNN_long"], default="last_visit")
