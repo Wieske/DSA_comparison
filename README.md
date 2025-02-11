@@ -5,12 +5,13 @@ This repository can be used to reproduce the results from "A Comparative Study o
 The repository contains the following files and directories:
 ```
 ├── dataset: contains the synthetic data
-├── figures: contains the figures shown in the paper and supplementary material
+├── figures: contains the figures shown in the paper
 ├── results: contains combined results from all experiments
 ├── skeleton: contains python scripts
 ├── data_processing.py: used for preprocessing of the ADNI TADPOLE dataset
 ├── environment.yml: can be used to reproduce the environment in conda
 ├── main.py: main python script
+├── main_random_search.py: main python script for performing random hyperparameter search
 ├── paper_figures.py: can be used to reproduce all figures from the paper and supplementary material
 ├── requirements.txt: can be used to reproduce the environment
 ```
